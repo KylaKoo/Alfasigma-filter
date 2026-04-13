@@ -147,7 +147,7 @@
     let cnv;
     const VIEW_SIZE = 640;
     const EXPORT_SIZE = 2000;
-    const DEFAULT_IMAGE_PATH = '/Alfasigma-filter/default.jpg'; // change to 'assets/default.jpg' if needed
+    const DEFAULT_IMAGE_PATH = 'https://kylakoo.github.io/Alfasigma-filter/default.jpg';// change to 'assets/default.jpg' if needed
 
     let userImg = null, userImg2 = null, userImg3 = null;
     let preparedViewImg = null, preparedHiImg = null;
@@ -190,20 +190,23 @@
       F2.builtForImg = null;
     }
 
-    function loadDefaultImage(){
-      loadImage(
-        DEFAULT_IMAGE_PATH,
-        img => {
-          setMainImage(img);
-          redraw();
-        },
-        err => {
-          console.error('Failed to load default image', err);
-          background(15);
-          drawPlaceholder('Default image not found');
-        }
-      );
+   function loadDefaultImage(){
+  console.log('Trying to load default image:', DEFAULT_IMAGE_PATH);
+
+  loadImage(
+    DEFAULT_IMAGE_PATH,
+    img => {
+      console.log('Default image loaded successfully:', img.width, img.height);
+      setMainImage(img);
+      redraw();
+    },
+    err => {
+      console.error('Failed to load default image:', DEFAULT_IMAGE_PATH, err);
+      background(15);
+      drawPlaceholder('Default image failed to load');
     }
+  );
+}
 
     function drawingContextP5(){
       return {
