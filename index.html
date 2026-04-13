@@ -12,20 +12,31 @@
       margin:0; background:#111; color:#eee; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","PingFang SC","Microsoft Yahei",sans-serif;
       display:grid; grid-template-columns:var(--panel-w) 1fr; min-height:100vh;
     }
-    .panel{padding:20px 18px; border-right:1px solid #222; background:#141414; display:flex; flex-direction:column; gap:14px; position:sticky; top:0; height:100vh; overflow:auto;}
+    .panel{
+      padding:20px 18px; border-right:1px solid #222; background:#141414;
+      display:flex; flex-direction:column; gap:14px; position:sticky; top:0;
+      height:100vh; overflow:auto;
+    }
     .panel h1{font-size:18px; margin:0 0 6px; letter-spacing:.2px;}
     .panel .sub{font-size:12px; color:#aaa; margin-top:-4px;}
     .group{border:1px solid #232323; padding:12px; border-radius:10px; background:#101010;}
     .group h3{margin:0 0 10px; font-size:14px; color:#ddd;}
     .row{display:flex; align-items:center; gap:10px;}
     .row label{min-width:140px; font-size:13px; color:#bbb;}
-    select,input[type="file"],button,input[type="range"]{width:100%; background:#1d1d1d; color:#eee; border:1px solid #2a2a2a; padding:8px 10px; border-radius:8px; outline:none;}
+    select,input[type="file"],button,input[type="range"]{
+      width:100%; background:#1d1d1d; color:#eee; border:1px solid #2a2a2a;
+      padding:8px 10px; border-radius:8px; outline:none;
+    }
     input[type="range"]{padding:0; height:28px;}
     button{cursor:pointer; transition:filter .2s ease, background .2s ease;}
     button:hover{filter:brightness(1.15);}
     .hint{color:#8f8f8f; font-size:12px; line-height:1.5;}
     .canvas-wrap{display:grid; place-items:center; padding:24px;}
-    #canvas-holder{width:var(--canvas-size); height:var(--canvas-size); aspect-ratio:1; outline:1px solid #222; box-shadow:0 0 0 1px #000 inset, 0 0 30px rgba(0,0,0,.35); background:#0c0c0c; border-radius:14px; overflow:hidden;}
+    #canvas-holder{
+      width:var(--canvas-size); height:var(--canvas-size); aspect-ratio:1;
+      outline:1px solid #222; box-shadow:0 0 0 1px #000 inset, 0 0 30px rgba(0,0,0,.35);
+      background:#0c0c0c; border-radius:14px; overflow:hidden;
+    }
     .warn{color:#ffcf7e; font-size:12px;}
     .two{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
   </style>
@@ -38,7 +49,7 @@
     <div class="group">
       <h3>1) Upload image</h3>
       <input id="uploader" type="file" accept="image/*" />
-      <div class="hint">This is the main image used by Filters 1–3, and as background in Filter 4.</div>
+      <div class="hint">A default image is loaded automatically. Upload your own image to replace it.</div>
     </div>
 
     <div class="group">
@@ -54,7 +65,6 @@
       </div>
     </div>
 
-    <!-- Filter 1 controls -->
     <div id="f1" class="group">
       <h3>Filter 1 · Controls</h3>
       <div class="row">
@@ -68,7 +78,6 @@
       <div class="hint">Original image is painted first (no black). Minimum intensity is very light.</div>
     </div>
 
-    <!-- Filter 2 -->
     <div id="f2" class="group" style="display:none;">
       <h3>Filter 2 · Controls</h3>
       <div class="row">
@@ -81,13 +90,11 @@
       </div>
     </div>
 
-    <!-- Filter 3 -->
     <div id="f3" class="group" style="display:none;">
       <h3>Filter 3 · Shader</h3>
       <div class="hint">Move the mouse over the canvas to trigger short “running” bursts. No sliders. Export matches at 2000×2000.</div>
     </div>
 
-    <!-- Filter 4 -->
     <div id="f4" class="group" style="display:none;">
       <h3>Filter 4 · Collage + CMYK + Blur</h3>
       <div class="row">
@@ -119,7 +126,7 @@
         <input id="f4BlurMax" type="range" min="0" max="24" step="1" value="8" />
       </div>
       <div class="hint">
-        Uses main image as background. Randomly crops from image #1/#2/#3, overlays pieces; each piece may optionally get a CMYK (Filter 2-like) coloring and/or blur.
+        Uses main image as background. Randomly crops from image #1/#2/#3, overlays pieces; each piece may optionally get a CMYK coloring and/or blur.
       </div>
     </div>
 
@@ -140,6 +147,7 @@
     let cnv;
     const VIEW_SIZE = 640;
     const EXPORT_SIZE = 2000;
+    const DEFAULT_IMAGE_PATH = 'default.jpg'; // change to 'assets/default.jpg' if needed
 
     let userImg = null, userImg2 = null, userImg3 = null;
     let preparedViewImg = null, preparedHiImg = null;
@@ -153,14 +161,48 @@
       const ar = img.width / img.height;
       let tw = targetSize, th = targetSize;
       let sx, sy, sw, sh;
-      if (ar > 1) { sw = img.height; sh = img.height; sx = (img.width - sw) * 0.5; sy = 0; }
-      else { sw = img.width; sh = img.width; sx = 0; sy = (img.height - sh) * 0.5; }
+
+      if (ar > 1) {
+        sw = img.height;
+        sh = img.height;
+        sx = (img.width - sw) * 0.5;
+        sy = 0;
+      } else {
+        sw = img.width;
+        sh = img.width;
+        sx = 0;
+        sy = (img.height - sh) * 0.5;
+      }
+
       const g = createGraphics(tw, th);
       g.imageMode(CENTER);
-      g.push(); g.translate(tw/2, th/2);
+      g.push();
+      g.translate(tw/2, th/2);
       g.image(img, 0, 0, tw, th, sx, sy, sw, sh);
       g.pop();
       return g.get();
+    }
+
+    function setMainImage(img){
+      userImg = img;
+      preparedViewImg = fitImageToSquare(userImg, VIEW_SIZE);
+      preparedHiImg = fitImageToSquare(userImg, EXPORT_SIZE);
+      F2.builtForImg = null;
+    }
+
+    function loadDefaultImage(){
+      loadImage(
+        DEFAULT_IMAGE_PATH,
+        img => {
+          setMainImage(img);
+          redraw();
+        },
+        err => {
+          console.error('Failed to load default image', err);
+          background(15);
+          drawPlaceholder('Default image not found');
+        }
+      );
     }
 
     function drawingContextP5(){
@@ -185,14 +227,17 @@
     // ========================= Filter 1: Collage Glitch =========================
     const F1 = {
       seed: 100,
-      intensity: 0.0,  // 0..1, very light minimum
+      intensity: 0.0,
       drawTo(g, baseImg, size){
         if(!baseImg){
-          g.background(20); g.fill(180); g.textAlign(CENTER,CENTER);
+          g.background(20);
+          g.fill(180);
+          g.textAlign(CENTER,CENTER);
           g.text('Upload an image to start', size/2, size/2);
           return;
         }
-        g.image(baseImg, 0, 0, size, size); // background
+
+        g.image(baseImg, 0, 0, size, size);
 
         const tiles = floor(lerp(8, 400, this.intensity));
         const minW = lerp(size*0.30, size*0.02, this.intensity);
@@ -213,7 +258,7 @@
       }
     };
 
-    // ========================= Filter 2: CMYK Difference (bg colored + random layer count slider) =========================
+    // ========================= Filter 2: CMYK Difference =========================
     const F2 = {
       c:null,m:null,y:null,k:null,
       builtForImg:null,
@@ -222,6 +267,7 @@
 
       buildFrom(baseImg, size){
         if(!baseImg) return;
+
         this.c=createImage(size,size);
         this.m=createImage(size,size);
         this.y=createImage(size,size);
@@ -230,29 +276,48 @@
         const square=createGraphics(size,size);
         square.image(baseImg,0,0,size,size);
 
-        this.c.loadPixels(); this.m.loadPixels(); this.y.loadPixels(); this.k.loadPixels();
-        const src=square.get(); src.loadPixels();
+        this.c.loadPixels();
+        this.m.loadPixels();
+        this.y.loadPixels();
+        this.k.loadPixels();
+
+        const src=square.get();
+        src.loadPixels();
+
         for(let yy=0; yy<size; yy++){
           for(let xx=0; xx<size; xx++){
             const idx=4*(yy*size+xx);
             const r=src.pixels[idx+0], g=src.pixels[idx+1], b=src.pixels[idx+2];
-            this.c.pixels[idx+0]=255-r; this.c.pixels[idx+1]=255; this.c.pixels[idx+2]=255; this.c.pixels[idx+3]=255;
-            this.m.pixels[idx+0]=255; this.m.pixels[idx+1]=255-g; this.m.pixels[idx+2]=255; this.m.pixels[idx+3]=255;
-            this.y.pixels[idx+0]=255; this.y.pixels[idx+1]=255; this.y.pixels[idx+2]=255-b; this.y.pixels[idx+3]=255;
-            const br=0.299*r + 0.587*g + 0.114*b; const kk=255 - br;
+
+            this.c.pixels[idx+0]=255-r; this.c.pixels[idx+1]=255;   this.c.pixels[idx+2]=255;   this.c.pixels[idx+3]=255;
+            this.m.pixels[idx+0]=255;   this.m.pixels[idx+1]=255-g; this.m.pixels[idx+2]=255;   this.m.pixels[idx+3]=255;
+            this.y.pixels[idx+0]=255;   this.y.pixels[idx+1]=255;   this.y.pixels[idx+2]=255-b; this.y.pixels[idx+3]=255;
+
+            const br=0.299*r + 0.587*g + 0.114*b;
+            const kk=255 - br;
             this.k.pixels[idx+0]=kk; this.k.pixels[idx+1]=kk; this.k.pixels[idx+2]=kk; this.k.pixels[idx+3]=255;
           }
         }
-        this.c.updatePixels(); this.m.updatePixels(); this.y.updatePixels(); this.k.updatePixels();
+
+        this.c.updatePixels();
+        this.m.updatePixels();
+        this.y.updatePixels();
+        this.k.updatePixels();
         this.builtForImg = baseImg;
       },
 
       renderOnce(g, baseImg, size){
         if(!baseImg){
-          g.background(20); g.fill(180); g.textAlign(CENTER,CENTER);
-          g.text('Upload an image to start', size/2, size/2); return;
+          g.background(20);
+          g.fill(180);
+          g.textAlign(CENTER,CENTER);
+          g.text('Upload an image to start', size/2, size/2);
+          return;
         }
-        if(this.builtForImg !== baseImg || !this.c){ this.buildFrom(baseImg, size); }
+
+        if(this.builtForImg !== baseImg || !this.c){
+          this.buildFrom(baseImg, size);
+        }
 
         g.imageMode(CENTER);
         g.blendMode(DIFFERENCE);
@@ -260,7 +325,6 @@
 
         randomSeed(this.seed);
 
-        // background CMYK at center
         g.image(this.k, size/2, size/2);
         g.image(this.c, size/2, size/2);
         g.image(this.m, size/2, size/2);
@@ -279,12 +343,13 @@
             g.image(this.k, size/2 + random(-size/1, size/1), size/2 + random(-size/60, size/60));
           }
         }
+
         g.blendMode(BLEND);
         g.imageMode(CORNER);
       }
     };
 
-    // ========================= Filter 3: Shader (WebGL1/2 compatible, pink ring removed) =========================
+    // ========================= Filter 3: Shader =========================
     const vertGL1 = `
 precision highp float;
 attribute vec3 aPosition;
@@ -315,7 +380,7 @@ void main(){
   float a = 2.0 * atan(-qq.y, qq.x);
   vec2 r = l * vec2(qq.x * cos(a) + qq.y * sin(a), qq.x * sin(a) - qq.y * cos(a));
   r += mouse;
-  vec3 color = texture2D(iImg, r).rgb;   // no halo
+  vec3 color = texture2D(iImg, r).rgb;
   gl_FragColor = vec4(color, 1.);
 }
 `;
@@ -350,7 +415,7 @@ void main(){
   float a = 2.0 * atan(-qq.y, qq.x);
   vec2 r = l * vec2(qq.x * cos(a) + qq.y * sin(a), qq.x * sin(a) - qq.y * cos(a));
   r += mouse;
-  vec3 color = texture(iImg, r).rgb;     // no halo
+  vec3 color = texture(iImg, r).rgb;
   fragColor = vec4(color, 1.);
 }
 `;
@@ -367,34 +432,61 @@ void main(){
           this.pg.noStroke();
           const gl = this.pg.drawingContext;
           if (gl) gl.disable(gl.DEPTH_TEST);
+
           const isGL2 = (gl && (gl instanceof WebGL2RenderingContext));
           const vsrc = isGL2 ? vertGL2 : vertGL1;
           const fsrc = isGL2 ? fragGL2 : fragGL1;
+
           this.shaderObj = this.pg.createShader(vsrc, fsrc);
           this.pg.shader(this.shaderObj);
+
           this.c.length = 0;
           for(let i=0;i<22;i++) this.c.push(random(-2,2));
           this.lt = random(100);
           this.t = millis();
         }
       },
+
       mouseMoved(){
         if(random(1) > 0.95 && !this.running){
-          this.t = millis(); this.lt += this.t;
-          this.c.length = 0; for(let i=0;i<22;i++) this.c.push(random(-2,2));
+          this.t = millis();
+          this.lt += this.t;
+          this.c.length = 0;
+          for(let i=0;i<22;i++) this.c.push(random(-2,2));
           this.running = true;
         }
         this.running = true;
       },
+
       mouseReleased(){
         this.noctaves = (this.noctaves>=7)?1:this.noctaves+2;
-        if(this.noctaves===1){ this.c.length=0; for(let i=0;i<22;i++) this.c.push(random(-2,2)); }
+        if(this.noctaves===1){
+          this.c.length=0;
+          for(let i=0;i<22;i++) this.c.push(random(-2,2));
+        }
       },
+
       drawTo(g, baseImg, size){
-        if(!baseImg){ g.background(20); g.fill(180); g.textAlign(CENTER,CENTER); g.text('Upload an image to start', size/2, size/2); return; }
+        if(!baseImg){
+          g.background(20);
+          g.fill(180);
+          g.textAlign(CENTER,CENTER);
+          g.text('Upload an image to start', size/2, size/2);
+          return;
+        }
+
         this.ensurePG(size);
-        if(this.running){ this.t++; if(this.t>=this.lt){ this.running=false; this.lt=random(30);} }
-        const mx = constrain(mouseX, 0, width), my = constrain(mouseY, 0, height);
+        if(this.running){
+          this.t++;
+          if(this.t>=this.lt){
+            this.running=false;
+            this.lt=random(30);
+          }
+        }
+
+        const mx = constrain(mouseX, 0, width);
+        const my = constrain(mouseY, 0, height);
+
         this.pg.shader(this.shaderObj);
         this.shaderObj.setUniform('iResolution', [this.pg.width, this.pg.height]);
         this.shaderObj.setUniform('iTime', millis()*0.001);
@@ -402,68 +494,86 @@ void main(){
         this.shaderObj.setUniform('iImg', baseImg);
         this.shaderObj.setUniform('c', new Float32Array(this.c));
         this.shaderObj.setUniform('running', this.running);
+
         this.pg.rect(-this.pg.width/2, -this.pg.height/2, this.pg.width, this.pg.height);
         g.image(this.pg, 0, 0, size, size);
       },
+
       renderHiRes(g, baseImg, size){
         const pg = createGraphics(size, size, WEBGL);
         pg.pixelDensity(1);
-        const gl = pg.drawingContext; if (gl) gl.disable(gl.DEPTH_TEST);
+        const gl = pg.drawingContext;
+        if (gl) gl.disable(gl.DEPTH_TEST);
+
         const isGL2 = (gl && (gl instanceof WebGL2RenderingContext));
         const sh = pg.createShader(isGL2?vertGL2:vertGL1, isGL2?fragGL2:fragGL1);
+
         const scale = size / VIEW_SIZE;
         const mx = constrain(mouseX, 0, VIEW_SIZE) * scale;
         const my = constrain(mouseY, 0, VIEW_SIZE) * scale;
+
         sh.setUniform('iResolution', [pg.width, pg.height]);
         sh.setUniform('iTime', millis()*0.001);
         sh.setUniform('iMouse', [mx, my]);
         sh.setUniform('iImg', baseImg);
         sh.setUniform('c', new Float32Array(this.c));
         sh.setUniform('running', this.running);
-        pg.shader(sh); pg.noStroke();
+
+        pg.shader(sh);
+        pg.noStroke();
         pg.rect(-pg.width/2, -pg.height/2, pg.width, pg.height);
         g.image(pg, 0, 0, size, size);
         pg.remove();
       }
     };
 
-    // ========================= Filter 4: Collage + optional CMYK + optional Blur (multi-image) =========================
+    // ========================= Filter 4: Collage + optional CMYK + optional Blur =========================
     const F4 = {
       seed: 123,
-      intensity: 0.4,          // 0..1 → tiles 20..420
-      cmykProb: 0.5,          // probability per piece to apply CMYK coloring
-      blurProb: 0.35,         // probability per piece to blur
-      blurMax: 8,             // max blur radius (@ view); scaled for export
-      // helper: make CMYK channels from a square p5.Image (returns {c,m,y,k} as p5.Image)
+      intensity: 0.4,
+      cmykProb: 0.5,
+      blurProb: 0.35,
+      blurMax: 8,
+
       makeCMYK(piece){
         const w = piece.width, h = piece.height;
         const c = createImage(w,h), m = createImage(w,h), y = createImage(w,h), k = createImage(w,h);
-        piece.loadPixels(); c.loadPixels(); m.loadPixels(); y.loadPixels(); k.loadPixels();
+
+        piece.loadPixels();
+        c.loadPixels(); m.loadPixels(); y.loadPixels(); k.loadPixels();
+
         for(let yy=0; yy<h; yy++){
           for(let xx=0; xx<w; xx++){
             const idx=4*(yy*w+xx);
             const r=piece.pixels[idx+0], g=piece.pixels[idx+1], b=piece.pixels[idx+2];
-            // C/M/Y
+
             c.pixels[idx+0]=255-r; c.pixels[idx+1]=255;   c.pixels[idx+2]=255;   c.pixels[idx+3]=255;
             m.pixels[idx+0]=255;   m.pixels[idx+1]=255-g; m.pixels[idx+2]=255;   m.pixels[idx+3]=255;
             y.pixels[idx+0]=255;   y.pixels[idx+1]=255;   y.pixels[idx+2]=255-b; y.pixels[idx+3]=255;
-            // K ~ 1 - brightness
+
             const br=0.299*r+0.587*g+0.114*b, kk=255-br;
             k.pixels[idx+0]=kk; k.pixels[idx+1]=kk; k.pixels[idx+2]=kk; k.pixels[idx+3]=255;
           }
         }
+
         c.updatePixels(); m.updatePixels(); y.updatePixels(); k.updatePixels();
         return {c,m,y,k};
       },
-      // build a colored (CMYK-difference-stacked) version of "piece" and return as p5.Image
+
       buildColoredPiece(piece){
         const w=piece.width, h=piece.height;
         const {c,m,y,k} = this.makeCMYK(piece);
         const g = createGraphics(w,h);
-        g.imageMode(CENTER); g.blendMode(DIFFERENCE); g.background(0);
-        // center stack first
-        g.image(k, w/2, h/2); g.image(c, w/2, h/2); g.image(m, w/2, h/2); g.image(y, w/2, h/2);
-        // add a few jittered overlays (1..4) for texture
+
+        g.imageMode(CENTER);
+        g.blendMode(DIFFERENCE);
+        g.background(0);
+
+        g.image(k, w/2, h/2);
+        g.image(c, w/2, h/2);
+        g.image(m, w/2, h/2);
+        g.image(y, w/2, h/2);
+
         const n = floor(random(1,5));
         for(let i=0;i<n;i++){
           const mode = floor(random(4));
@@ -472,17 +582,20 @@ void main(){
           else if(mode===2) g.image(y, w/2 + random(-w/1, w/5), h/2 + random(-h/60, h/60));
           else g.image(k, w/2 + random(-w/1, w/1), h/2 + random(-h/60, h/60));
         }
+
         g.blendMode(BLEND);
         return g.get();
       },
-      // draw
+
       drawTo(g, base1, base2, base3, size, scaleFor=1){
         if(!base1){
-          g.background(20); g.fill(180); g.textAlign(CENTER,CENTER);
+          g.background(20);
+          g.fill(180);
+          g.textAlign(CENTER,CENTER);
           g.text('Upload the main image (and optional #2/#3) to start', size/2, size/2);
           return;
         }
-        // background is image #1
+
         g.image(base1, 0, 0, size, size);
 
         const tiles = floor(lerp(4, 420, this.intensity));
@@ -490,23 +603,23 @@ void main(){
         const maxW = lerp(size*0.55, size*0.18, this.intensity);
         const blurMaxScaled = this.blurMax * scaleFor;
 
-        // source pool
-        const pool = [base1].concat(base2? [base2]:[]).concat(base3? [base3]:[]);
+        const pool = [base1].concat(base2 ? [base2] : []).concat(base3 ? [base3] : []);
+
         randomSeed(this.seed);
         for(let i=0;i<tiles;i++){
           const src = random(pool);
           const rw = floor(random(minW, maxW));
           const rh = floor(random(minW, maxW));
+
           const sx = floor(random(0, src.width - rw));
           const sy = floor(random(0, src.height - rh));
-          let piece = src.get(sx, sy, rw, rh); // cropped piece (p5.Image)
 
-          // maybe colorize with CMYK
+          let piece = src.get(sx, sy, rw, rh);
+
           if(random(1) < this.cmykProb){
             piece = this.buildColoredPiece(piece);
           }
 
-          // maybe blur
           if(random(1) < this.blurProb && blurMaxScaled > 0){
             const pg = createGraphics(piece.width, piece.height);
             pg.image(piece, 0, 0);
@@ -515,7 +628,6 @@ void main(){
             piece = pg.get();
           }
 
-          // draw to canvas with random placement & scale
           const tx = random(0, size), ty = random(0, size);
           const tw = rw * random(0.5, 1.6);
           const th = rh * random(0.5, 1.6);
@@ -531,49 +643,92 @@ void main(){
       pixelDensity(1);
       noLoop();
 
-      // bind elements
       els.uploader=byId('uploader');
-      els.uploader2=byId('uploader2'); els.uploader3=byId('uploader3');
+      els.uploader2=byId('uploader2');
+      els.uploader3=byId('uploader3');
       els.filterSel=byId('filterSel');
-      els.f1=byId('f1'); els.f1Intensity=byId('f1Intensity'); els.f1Seed=byId('f1Seed');
-      els.f2=byId('f2'); els.f2Shuffle=byId('f2Shuffle'); els.f2MaxLayers=byId('f2MaxLayers');
+
+      els.f1=byId('f1');
+      els.f1Intensity=byId('f1Intensity');
+      els.f1Seed=byId('f1Seed');
+
+      els.f2=byId('f2');
+      els.f2Shuffle=byId('f2Shuffle');
+      els.f2MaxLayers=byId('f2MaxLayers');
+
       els.f3=byId('f3');
+
       els.f4=byId('f4');
-      els.f4Intensity=byId('f4Intensity'); els.f4Seed=byId('f4Seed'); els.f4CMYKProb=byId('f4CMYKProb'); els.f4BlurProb=byId('f4BlurProb'); els.f4BlurMax=byId('f4BlurMax');
+      els.f4Intensity=byId('f4Intensity');
+      els.f4Seed=byId('f4Seed');
+      els.f4CMYKProb=byId('f4CMYKProb');
+      els.f4BlurProb=byId('f4BlurProb');
+      els.f4BlurMax=byId('f4BlurMax');
+
       els.btnExport=byId('btnExport');
 
-      // uploads
       els.uploader.addEventListener('change', (e)=>loadToSlots(e, 1));
       els.uploader2.addEventListener('change', (e)=>loadToSlots(e, 2));
       els.uploader3.addEventListener('change', (e)=>loadToSlots(e, 3));
 
-      // filter switch
       els.filterSel.addEventListener('change', switchFilter);
 
-      // F1 sliders
-      els.f1Intensity.addEventListener('input', ()=>{F1.intensity=parseFloat(els.f1Intensity.value); redraw();});
-      els.f1Seed.addEventListener('input', ()=>{F1.seed=int(els.f1Seed.value); redraw();});
+      els.f1Intensity.addEventListener('input', ()=>{
+        F1.intensity=parseFloat(els.f1Intensity.value);
+        redraw();
+      });
+      els.f1Seed.addEventListener('input', ()=>{
+        F1.seed=int(els.f1Seed.value);
+        redraw();
+      });
 
-      // F2
-      els.f2MaxLayers.addEventListener('input', ()=>{F2.maxExtraLayers=int(els.f2MaxLayers.value);});
-      els.f2Shuffle.addEventListener('click', ()=>{F2.seed=Math.floor(random(1e9)); redraw();});
+      els.f2MaxLayers.addEventListener('input', ()=>{
+        F2.maxExtraLayers=int(els.f2MaxLayers.value);
+        redraw();
+      });
+      els.f2Shuffle.addEventListener('click', ()=>{
+        F2.seed=Math.floor(random(1e9));
+        redraw();
+      });
 
-      // F3 mouse interactions
-      window.addEventListener('mousemove', ()=>{ if(els.filterSel.value==='scan'){ F3.mouseMoved(); redraw(); } });
-      window.addEventListener('mouseup', ()=>{ if(els.filterSel.value==='scan'){ F3.mouseReleased(); redraw(); } });
+      window.addEventListener('mousemove', ()=>{
+        if(els.filterSel.value==='scan'){
+          F3.mouseMoved();
+          redraw();
+        }
+      });
+      window.addEventListener('mouseup', ()=>{
+        if(els.filterSel.value==='scan'){
+          F3.mouseReleased();
+          redraw();
+        }
+      });
 
-      // F4 sliders
-      els.f4Intensity.addEventListener('input', ()=>{F4.intensity=parseFloat(els.f4Intensity.value); redraw();});
-      els.f4Seed.addEventListener('input', ()=>{F4.seed=int(els.f4Seed.value); redraw();});
-      els.f4CMYKProb.addEventListener('input', ()=>{F4.cmykProb=parseFloat(els.f4CMYKProb.value); redraw();});
-      els.f4BlurProb.addEventListener('input', ()=>{F4.blurProb=parseFloat(els.f4BlurProb.value); redraw();});
-      els.f4BlurMax.addEventListener('input', ()=>{F4.blurMax=int(els.f4BlurMax.value); redraw();});
+      els.f4Intensity.addEventListener('input', ()=>{
+        F4.intensity=parseFloat(els.f4Intensity.value);
+        redraw();
+      });
+      els.f4Seed.addEventListener('input', ()=>{
+        F4.seed=int(els.f4Seed.value);
+        redraw();
+      });
+      els.f4CMYKProb.addEventListener('input', ()=>{
+        F4.cmykProb=parseFloat(els.f4CMYKProb.value);
+        redraw();
+      });
+      els.f4BlurProb.addEventListener('input', ()=>{
+        F4.blurProb=parseFloat(els.f4BlurProb.value);
+        redraw();
+      });
+      els.f4BlurMax.addEventListener('input', ()=>{
+        F4.blurMax=int(els.f4BlurMax.value);
+        redraw();
+      });
 
-      // export
       els.btnExport.addEventListener('click', exportHiRes);
 
       background(15);
-      drawPlaceholder();
+      loadDefaultImage();
     }
 
     function draw(){
@@ -592,20 +747,22 @@ void main(){
       }
     }
 
-    function drawPlaceholder(){
-      push(); fill(180); textAlign(CENTER,CENTER);
-      text('Upload an image to begin', width/2, height/2); pop();
+    function drawPlaceholder(message='Upload an image to begin'){
+      push();
+      fill(180);
+      textAlign(CENTER,CENTER);
+      text(message, width/2, height/2);
+      pop();
     }
 
     function loadToSlots(e, slot){
-      const file=e.target.files[0]; if(!file) return;
+      const file=e.target.files[0];
+      if(!file) return;
+
       const url=URL.createObjectURL(file);
       loadImage(url, img=>{
         if(slot===1){
-          userImg=img;
-          preparedViewImg=fitImageToSquare(userImg, VIEW_SIZE);
-          preparedHiImg=fitImageToSquare(userImg, EXPORT_SIZE);
-          F2.builtForImg=null;
+          setMainImage(img);
         }else if(slot===2){
           userImg2=img;
           preparedViewImg2=fitImageToSquare(userImg2, VIEW_SIZE);
@@ -632,7 +789,6 @@ void main(){
     function exportHiRes(){
       const g=createGraphics(EXPORT_SIZE, EXPORT_SIZE);
       g.pixelDensity(1);
-      const base=preparedHiImg || null;
 
       const GG = {
         width:g.width, height:g.height,
@@ -652,12 +808,14 @@ void main(){
       };
 
       const mode=els.filterSel.value;
+
       if(mode==='glitch'){
         F1.drawTo(GG, preparedHiImg, EXPORT_SIZE);
       }else if(mode==='cmyk'){
         const bakC=F2.c, bakM=F2.m, bakY=F2.y, bakK=F2.k, bakBuilt=F2.builtForImg, bakSeed=F2.seed, bakMax=F2.maxExtraLayers;
         F2.buildFrom(preparedHiImg, EXPORT_SIZE);
-        F2.seed = bakSeed; F2.maxExtraLayers=bakMax;
+        F2.seed = bakSeed;
+        F2.maxExtraLayers=bakMax;
         F2.renderOnce(GG, preparedHiImg, EXPORT_SIZE);
         F2.c=bakC; F2.m=bakM; F2.y=bakY; F2.k=bakK; F2.builtForImg=bakBuilt;
       }else if(mode==='scan'){
